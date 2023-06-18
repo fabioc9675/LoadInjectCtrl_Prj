@@ -66,5 +66,16 @@ void IRAM_ATTR ISR_botonIngreso(void)
 }
 
 /** ****************************************************************************
+ ** ************ FUNCTIONS *****************************************************
+ ** ****************************************************************************/
+void init_IRQ(void)
+{
+    attachInterrupt(digitalPinToInterrupt(BOTON_1), ISR_boton1, FALLING);
+    attachInterrupt(digitalPinToInterrupt(BOTON_2), ISR_boton2, FALLING);
+    attachInterrupt(digitalPinToInterrupt(BOTON_3), ISR_boton3, FALLING);
+    attachInterrupt(digitalPinToInterrupt(BOTON_INGRESO), ISR_botonIngreso, FALLING);
+}
+
+/** ****************************************************************************
  ** ************ END OF THE CODE ***********************************************
  ** ****************************************************************************/
