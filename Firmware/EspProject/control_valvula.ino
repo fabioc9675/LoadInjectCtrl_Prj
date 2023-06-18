@@ -47,6 +47,9 @@
 #define CASE_MIN 0
 #define CASE_SEC 1
 
+#define STOP_PROCESS 0
+#define INIT_PROCESS 1
+
 /** ****************************************************************************
  ** ************ STRUCTURES ****************************************************
  ** ****************************************************************************/
@@ -83,6 +86,7 @@ volatile uint8_t flagTimerInterrupt;
 
 int configState = 0;
 int positionCursor = 0;
+int processState = 0;
 
 // Definir variables globales
 int tiempo1 = 0;
@@ -162,153 +166,188 @@ void setup()
 void loop()
 {
 
-  if (flagTimerInterrupt)
+  if (processState == STOP_PROCESS)
   {
-    flagTimerInterrupt = FALSE;
 
-    contador++;
-    if (contador >= 1000)
+    if (flagTimerInterrupt)
     {
-      contador = 0;
-      Serial.println("interrupcion");
+      flagTimerInterrupt = FALSE;
+
+      contador++;
+      if (contador >= 1000)
+      {
+        contador = 0;
+        Serial.println("interrupcion");
+      }
+    }
+
+    // Evaluacion del boton de incremento de valor
+    if (buttonIncrement)
+    {
+      switch (configState)
+      {
+      case LOAD_MIN:
+        IncrementValue(&loadTime, CASE_MIN);
+        lcd.setCursor(POS_LOAD, 2);
+        lcd.print(loadTime.timeToPrint);
+        break;
+      case LOAD_SEC:
+        IncrementValue(&loadTime, CASE_SEC);
+        lcd.setCursor(POS_LOAD, 2);
+        lcd.print(loadTime.timeToPrint);
+        break;
+      case INJE_MIN:
+        IncrementValue(&injeTime, CASE_MIN);
+        lcd.setCursor(POS_INJE, 2);
+        lcd.print(injeTime.timeToPrint);
+        break;
+      case INJE_SEC:
+        IncrementValue(&injeTime, CASE_SEC);
+        lcd.setCursor(POS_INJE, 2);
+        lcd.print(injeTime.timeToPrint);
+        break;
+
+      default:
+        break;
+      }
+
+      lcd.setCursor(positionCursor, 2);
+
+      delay(300);
+      buttonIncrement = false;
+    }
+
+    // Evaluacion del boton de decremento del valor
+    if (buttonDecrement)
+    {
+      switch (configState)
+      {
+      case LOAD_MIN:
+        DecrementValue(&loadTime, CASE_MIN);
+        lcd.setCursor(POS_LOAD, 2);
+        lcd.print(loadTime.timeToPrint);
+        break;
+      case LOAD_SEC:
+        DecrementValue(&loadTime, CASE_SEC);
+        lcd.setCursor(POS_LOAD, 2);
+        lcd.print(loadTime.timeToPrint);
+        break;
+      case INJE_MIN:
+        DecrementValue(&injeTime, CASE_MIN);
+        lcd.setCursor(POS_INJE, 2);
+        lcd.print(injeTime.timeToPrint);
+        break;
+      case INJE_SEC:
+        DecrementValue(&injeTime, CASE_SEC);
+        lcd.setCursor(POS_INJE, 2);
+        lcd.print(injeTime.timeToPrint);
+        break;
+
+      default:
+        break;
+      }
+
+      lcd.setCursor(positionCursor, 2);
+
+      delay(300);
+      buttonDecrement = false;
+    }
+
+    // Boton seleccion de dato
+    if (buttonSelect)
+    {
+      // Cambia de estado
+      nextStateControl();
+      lcd.setCursor(positionCursor, 2);
+
+      delay(300);           // debouncing time
+      buttonSelect = false; // habilita la bandera para atender una nueva interrupcion
     }
   }
 
-  // Evaluacion del boton de incremento de valor
-  if (buttonIncrement)
+  else if (processState == INIT_PROCESS)
   {
-    switch (configState)
-    {
-    case LOAD_MIN:
-      IncrementValue(&loadTime, CASE_MIN);
-      lcd.setCursor(POS_LOAD, 2);
-      lcd.print(loadTime.timeToPrint);
-      break;
-    case LOAD_SEC:
-      IncrementValue(&loadTime, CASE_SEC);
-      lcd.setCursor(POS_LOAD, 2);
-      lcd.print(loadTime.timeToPrint);
-      break;
-    case INJE_MIN:
-      IncrementValue(&injeTime, CASE_MIN);
-      lcd.setCursor(POS_INJE, 2);
-      lcd.print(injeTime.timeToPrint);
-      break;
-    case INJE_SEC:
-      IncrementValue(&injeTime, CASE_SEC);
-      lcd.setCursor(POS_INJE, 2);
-      lcd.print(injeTime.timeToPrint);
-      break;
-
-    default:
-      break;
-    }
-
-    lcd.setCursor(positionCursor, 2);
-
-    delay(300);
-    buttonIncrement = false;
   }
 
-  // Evaluacion del boton de decremento del valor
-  if (buttonDecrement)
-  {
-    switch (configState)
-    {
-    case LOAD_MIN:
-      DecrementValue(&loadTime, CASE_MIN);
-      lcd.setCursor(POS_LOAD, 2);
-      lcd.print(loadTime.timeToPrint);
-      break;
-    case LOAD_SEC:
-      DecrementValue(&loadTime, CASE_SEC);
-      lcd.setCursor(POS_LOAD, 2);
-      lcd.print(loadTime.timeToPrint);
-      break;
-    case INJE_MIN:
-      DecrementValue(&injeTime, CASE_MIN);
-      lcd.setCursor(POS_INJE, 2);
-      lcd.print(injeTime.timeToPrint);
-      break;
-    case INJE_SEC:
-      DecrementValue(&injeTime, CASE_SEC);
-      lcd.setCursor(POS_INJE, 2);
-      lcd.print(injeTime.timeToPrint);
-      break;
-
-    default:
-      break;
-    }
-
-    lcd.setCursor(positionCursor, 2);
-
-    delay(300);
-    buttonDecrement = false;
-  }
-
-  if (buttonSelect)
-  {
-    // Cambia de estado
-    nextStateControl();
-    lcd.setCursor(positionCursor, 2);
-
-    delay(300);           // debouncing time
-    buttonSelect = false; // habilita la bandera para atender una nueva interrupcion
-  }
-
+  // ---------------------------------------------------------
+  // -- Boton de iniciar proceso -----------------------------
+  // ---------------------------------------------------------
   if (buttonOk)
   {
-    buttonOk = false;
 
-    unsigned long startTime = millis(); // Tiempo de inicio del ciclo
-    unsigned long elapsedTime = 0;      // Tiempo transcurrido
+    switch (processState)
+    {
+    case STOP_PROCESS:
+      processState = INIT_PROCESS;
 
-    while (elapsedTime < tiempo_ciclo * 1000 && relesEncendidos)
-    { // Ejecutar durante tiempo ciclo
+      lcd.noBlink(); // Activar el parpadeo del cursor
+      break;
 
-      digitalWrite(LED_1, HIGH);
-      digitalWrite(LED_2, LOW);
+    case INIT_PROCESS:
+      processState = STOP_PROCESS;
 
-      // Encender el primer LED y apagar el segundo LED
-      digitalWrite(PIN_RELE1, LOW);
-      digitalWrite(PIN_RELE2, HIGH);
-      Serial.println("led1 on");
-      unsigned long tiempo1Start = millis();
-      delay(2000);
-      digitalWrite(PIN_RELE1, HIGH);
-      digitalWrite(PIN_RELE2, HIGH);
+      configState = LOAD_MIN;        // pasa al estado de configuracion de minutos para LOAD
+      positionCursor = POS_LOAD_MIN; // Coloca el cursoe en la posicion de minutos para carga
+      lcd.setCursor(POS_LOAD_MIN, 2);
+      lcd.blink(); // Activar el parpadeo del cursor
+      break;
 
-      while (millis() - tiempo1Start < tiempo1 * 1000)
-      {
-        // Esperar el tiempo correspondiente
-      }
-
-      digitalWrite(LED_1, LOW);
-      digitalWrite(LED_2, HIGH);
-
-      // Encender el segundo LED y apagar el primer LED
-      digitalWrite(PIN_RELE1, HIGH);
-      digitalWrite(PIN_RELE2, LOW);
-      Serial.println("led2 on");
-      unsigned long tiempo2Start = millis();
-
-      delay(2000);
-      digitalWrite(PIN_RELE1, HIGH);
-      digitalWrite(PIN_RELE2, HIGH);
-      while (millis() - tiempo2Start < tiempo2 * 1000)
-      {
-        // Esperar el tiempo correspondiente
-      }
-
-      // Actualizar el tiempo transcurrido
-      elapsedTime = millis() - startTime;
+    default:
+      break;
     }
 
-    // Apagar ambos LEDs al finalizar el ciclo
-    digitalWrite(PIN_RELE1, HIGH);
-    digitalWrite(PIN_RELE2, HIGH);
+    delay(300);       // debouncing time
+    buttonOk = false; // habilita la bandera para atender una nueva interrupcion
 
-    relesEncendidos = false; // Desactivar el bucle para que no se reinicie
+    // unsigned long startTime = millis(); // Tiempo de inicio del ciclo
+    // unsigned long elapsedTime = 0;      // Tiempo transcurrido
+
+    // while (elapsedTime < tiempo_ciclo * 1000 && relesEncendidos)
+    // { // Ejecutar durante tiempo ciclo
+
+    //   digitalWrite(LED_1, HIGH);
+    //   digitalWrite(LED_2, LOW);
+
+    //   // Encender el primer LED y apagar el segundo LED
+    //   digitalWrite(PIN_RELE1, LOW);
+    //   digitalWrite(PIN_RELE2, HIGH);
+    //   Serial.println("led1 on");
+    //   unsigned long tiempo1Start = millis();
+    //   delay(2000);
+    //   digitalWrite(PIN_RELE1, HIGH);
+    //   digitalWrite(PIN_RELE2, HIGH);
+
+    //   while (millis() - tiempo1Start < tiempo1 * 1000)
+    //   {
+    //     // Esperar el tiempo correspondiente
+    //   }
+
+    //   digitalWrite(LED_1, LOW);
+    //   digitalWrite(LED_2, HIGH);
+
+    //   // Encender el segundo LED y apagar el primer LED
+    //   digitalWrite(PIN_RELE1, HIGH);
+    //   digitalWrite(PIN_RELE2, LOW);
+    //   Serial.println("led2 on");
+    //   unsigned long tiempo2Start = millis();
+
+    //   delay(2000);
+    //   digitalWrite(PIN_RELE1, HIGH);
+    //   digitalWrite(PIN_RELE2, HIGH);
+    //   while (millis() - tiempo2Start < tiempo2 * 1000)
+    //   {
+    //     // Esperar el tiempo correspondiente
+    //   }
+
+    //   // Actualizar el tiempo transcurrido
+    //   elapsedTime = millis() - startTime;
+    // }
+
+    // // Apagar ambos LEDs al finalizar el ciclo
+    // digitalWrite(PIN_RELE1, HIGH);
+    // digitalWrite(PIN_RELE2, HIGH);
+
+    // relesEncendidos = false; // Desactivar el bucle para que no se reinicie
   }
 }
 
