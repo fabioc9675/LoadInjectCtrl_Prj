@@ -28,10 +28,11 @@ extern "C"
    ** ****************************************************************************/
   //********DEFINICIONES DE HARDWARE******
   // Definir los pines de los pulsadores y el relé
-#define BOTON_1 4
-#define BOTON_2 16
-#define BOTON_3 17
-#define BOTON_INGRESO 5
+#define BUTTON_INCREMENT 4
+#define BUTTON_DECREMENT 16
+#define BUTTON_SELECT 17
+#define BUTTON_OK 5
+
 #define PIN_RELE1 18
 #define PIN_RELE2 19
 

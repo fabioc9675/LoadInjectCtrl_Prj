@@ -38,10 +38,10 @@ extern "C"
    ** ************ FUNCTIONS *****************************************************
    ** ****************************************************************************/
 
-  void IRAM_ATTR ISR_boton1(void);       // Interrupcion por presion del switch
-  void IRAM_ATTR ISR_boton2(void);       // Interrupcion por presion del switch
-  void IRAM_ATTR ISR_boton3(void);       // Interrupcion por presion del switch
-  void IRAM_ATTR ISR_botonIngreso(void); // Interrupcion por presion del switch
+  void IRAM_ATTR ISR_ButtonIncrement(void); // Interrupcion por presion del switch
+  void IRAM_ATTR ISR_ButtonDecrement(void); // Interrupcion por presion del switch
+  void IRAM_ATTR ISR_ButtonSelect(void);    // Interrupcion por presion del switch
+  void IRAM_ATTR ISR_ButtonOk(void);        // Interrupcion por presion del switch
 
   /** ****************************************************************************
    ** ************ FUNCTIONS *****************************************************

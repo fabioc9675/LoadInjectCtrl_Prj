@@ -31,10 +31,11 @@ void init_GPIO(void)
 {
 
     // Configurar los pines de los pulsadores y el relé
-    pinMode(BOTON_1, INPUT_PULLUP);
-    pinMode(BOTON_2, INPUT_PULLUP);
-    pinMode(BOTON_3, INPUT_PULLUP);
-    pinMode(BOTON_INGRESO, INPUT_PULLUP);
+    pinMode(BUTTON_INCREMENT, INPUT_PULLUP);
+    pinMode(BUTTON_DECREMENT, INPUT_PULLUP);
+    pinMode(BUTTON_SELECT, INPUT_PULLUP);
+    pinMode(BUTTON_OK, INPUT_PULLUP);
+
     pinMode(PIN_RELE1, OUTPUT);
     pinMode(PIN_RELE2, OUTPUT);
     pinMode(LED_1, OUTPUT);

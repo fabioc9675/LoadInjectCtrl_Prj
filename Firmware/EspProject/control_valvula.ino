@@ -88,10 +88,11 @@ int tiempo_ciclo = 0;
 unsigned long tiempoActual = 0;
 int cursorPosition = 0;
 
-volatile boolean boton1 = false;
-volatile boolean boton2 = false;
-volatile boolean boton3 = false;
-volatile boolean botonIngreso = false;
+volatile boolean buttonIncrement = false;
+volatile boolean buttonDecrement = false;
+volatile boolean buttonSelect = false;
+volatile boolean buttonOk = false;
+
 bool relesEncendidos = true;
 
 int contador = 0;
@@ -168,7 +169,7 @@ void loop()
     }
   }
 
-  if (boton1)
+  if (buttonIncrement)
   {
 
     if (cursorPosition == 0)
@@ -194,10 +195,10 @@ void loop()
       lcd.print(tiempo_ciclo);
     }
     delay(300);
-    boton1 = false;
+    buttonIncrement = false;
   }
 
-  if (boton2)
+  if (buttonDecrement)
   {
     // boton2 = false;
 
@@ -236,22 +237,22 @@ void loop()
       lcd.print(tiempo_ciclo);
     }
     delay(300);
-    boton2 = false;
+    buttonDecrement = false;
   }
 
-  if (boton3)
+  if (buttonSelect)
   {
     // Cambia de estado
     nextStateControl();
     lcd.setCursor(positionCursor, 2);
 
-    delay(300);     // debouncing time
-    boton3 = false; // habilita la bandera para atender una nueva interrupcion
+    delay(300);           // debouncing time
+    buttonSelect = false; // habilita la bandera para atender una nueva interrupcion
   }
 
-  if (botonIngreso)
+  if (buttonOk)
   {
-    botonIngreso = false;
+    buttonOk = false;
 
     unsigned long startTime = millis(); // Tiempo de inicio del ciclo
     unsigned long elapsedTime = 0;      // Tiempo transcurrido
