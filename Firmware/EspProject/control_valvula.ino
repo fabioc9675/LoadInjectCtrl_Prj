@@ -44,6 +44,9 @@
 #define INJE_MIN 3
 #define INJE_SEC 4
 
+#define CASE_MIN 0
+#define CASE_SEC 1
+
 /** ****************************************************************************
  ** ************ STRUCTURES ****************************************************
  ** ****************************************************************************/
@@ -106,6 +109,8 @@ LiquidCrystal_I2C lcd(LCD_ADDR, 20, 4);
 
 void AssignTimeValue(Control *control);
 void nextStateControl(void);
+void IncrementValue(Control *control, int caseLabel);
+void DecrementValue(Control *control, int caseLabel);
 
 /* ***************************************************************************
  * **** CONFIGURACION ********************************************************
@@ -169,73 +174,74 @@ void loop()
     }
   }
 
+  // Evaluacion del boton de incremento de valor
   if (buttonIncrement)
   {
+    switch (configState)
+    {
+    case LOAD_MIN:
+      IncrementValue(&loadTime, CASE_MIN);
+      lcd.setCursor(POS_LOAD, 2);
+      lcd.print(loadTime.timeToPrint);
+      break;
+    case LOAD_SEC:
+      IncrementValue(&loadTime, CASE_SEC);
+      lcd.setCursor(POS_LOAD, 2);
+      lcd.print(loadTime.timeToPrint);
+      break;
+    case INJE_MIN:
+      IncrementValue(&injeTime, CASE_MIN);
+      lcd.setCursor(POS_INJE, 2);
+      lcd.print(injeTime.timeToPrint);
+      break;
+    case INJE_SEC:
+      IncrementValue(&injeTime, CASE_SEC);
+      lcd.setCursor(POS_INJE, 2);
+      lcd.print(injeTime.timeToPrint);
+      break;
 
-    if (cursorPosition == 0)
-    {
-      tiempo1++;
-      lcd.setCursor(2, 1);
-      if (tiempo1 <= 9)
-      {
-        lcd.print(" ");
-      }
-      lcd.print(tiempo1);
+    default:
+      break;
     }
-    else if (cursorPosition == 1)
-    {
-      tiempo2++;
-      lcd.setCursor(7, 1);
-      lcd.print(tiempo2);
-    }
-    else if (cursorPosition == 2)
-    {
-      tiempo_ciclo += 10;
-      lcd.setCursor(13, 1);
-      lcd.print(tiempo_ciclo);
-    }
+
+    lcd.setCursor(positionCursor, 2);
+
     delay(300);
     buttonIncrement = false;
   }
 
+  // Evaluacion del boton de decremento del valor
   if (buttonDecrement)
   {
-    // boton2 = false;
+    switch (configState)
+    {
+    case LOAD_MIN:
+      DecrementValue(&loadTime, CASE_MIN);
+      lcd.setCursor(POS_LOAD, 2);
+      lcd.print(loadTime.timeToPrint);
+      break;
+    case LOAD_SEC:
+      DecrementValue(&loadTime, CASE_SEC);
+      lcd.setCursor(POS_LOAD, 2);
+      lcd.print(loadTime.timeToPrint);
+      break;
+    case INJE_MIN:
+      DecrementValue(&injeTime, CASE_MIN);
+      lcd.setCursor(POS_INJE, 2);
+      lcd.print(injeTime.timeToPrint);
+      break;
+    case INJE_SEC:
+      DecrementValue(&injeTime, CASE_SEC);
+      lcd.setCursor(POS_INJE, 2);
+      lcd.print(injeTime.timeToPrint);
+      break;
 
-    if (cursorPosition == 0)
-    {
-      tiempo1--;
-      if (tiempo1 < 0)
-      {
-        tiempo1 = 0;
-      }
-      lcd.setCursor(2, 1);
-      if (tiempo1 <= 9)
-      {
-        lcd.print(" ");
-      }
-      lcd.print(tiempo1);
+    default:
+      break;
     }
-    else if (cursorPosition == 1)
-    {
-      tiempo2--;
-      if (tiempo2 < 0)
-      {
-        tiempo2 = 0;
-      }
-      lcd.setCursor(7, 1);
-      lcd.print(tiempo2);
-    }
-    else if (cursorPosition == 2)
-    {
-      tiempo_ciclo -= 10;
-      if (tiempo_ciclo < 0)
-      {
-        tiempo_ciclo = 0;
-      }
-      lcd.setCursor(13, 1);
-      lcd.print(tiempo_ciclo);
-    }
+
+    lcd.setCursor(positionCursor, 2);
+
     delay(300);
     buttonDecrement = false;
   }
@@ -309,6 +315,58 @@ void loop()
 /* ***************************************************************************
  * **** Functions definition *************************************************
  * ***************************************************************************/
+// Funcion para incrementar valor de las variables
+void IncrementValue(Control *control, int caseLabel)
+{
+
+  if (caseLabel == CASE_MIN)
+  {
+    control->minute++;
+    if (control->minute > 59)
+    {
+      control->minute = 0;
+    }
+  }
+
+  if (caseLabel == CASE_SEC)
+  {
+    control->second++;
+    if (control->second > 59)
+    {
+      control->second = 0;
+    }
+  }
+
+  // Asigna el valor a imprimir
+  AssignTimeValue(control);
+}
+
+// Funcion para decrementar valor de las variables
+void DecrementValue(Control *control, int caseLabel)
+{
+
+  if (caseLabel == CASE_MIN)
+  {
+    if (control->minute == 0)
+    {
+      control->minute = 60;
+    }
+    control->minute--;
+  }
+
+  if (caseLabel == CASE_SEC)
+  {
+    if (control->second == 0)
+    {
+      control->second = 60;
+    }
+    control->second--;
+  }
+
+  // Asigna el valor a imprimir
+  AssignTimeValue(control);
+}
+
 // Funcion para asignar el valor de tiempo a la estructura
 void AssignTimeValue(Control *control)
 {
