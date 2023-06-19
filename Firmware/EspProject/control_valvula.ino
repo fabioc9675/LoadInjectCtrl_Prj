@@ -91,7 +91,7 @@ void setup()
 
   // Mostrar el texto "Carga" en la pantalla LCD
   lcd.setCursor(0, 1);
-  lcd.print("Load   Inject  Ciclo");
+  lcd.print("Load   Inject  ");
 
   loadTime.minute = 2;
   injeTime.minute = 2;
@@ -311,6 +311,18 @@ void loop()
       injeTime.timeOver = FALSE;
       injeTime.relayOver = FALSE;
 
+      loadTime.minute = loadTime.setTimeMin;
+      loadTime.second = loadTime.setTimeSec;
+      injeTime.minute = injeTime.setTimeMin;
+      injeTime.second = injeTime.setTimeSec;
+
+      AssignTimeValue(&loadTime);
+      AssignTimeValue(&injeTime);
+
+      // Mostrar el texto "Carga" en la pantalla LCD
+      lcd.setCursor(0, 1);
+      lcd.print("Load   Inject  Ciclo");
+
       lcd.noBlink(); // Activar el parpadeo del cursor
       break;
 
@@ -331,6 +343,10 @@ void loop()
 
       configState = LOAD_MIN;        // pasa al estado de configuracion de minutos para LOAD
       positionCursor = POS_LOAD_MIN; // Coloca el cursoe en la posicion de minutos para carga
+
+      // Mostrar el texto "Carga" en la pantalla LCD
+      lcd.setCursor(0, 1);
+      lcd.print("Load   Inject       ");
       lcd.setCursor(POS_LOAD_MIN, 2);
       lcd.blink(); // Activar el parpadeo del cursor
       break;
