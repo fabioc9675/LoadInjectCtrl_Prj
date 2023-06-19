@@ -38,7 +38,7 @@ void BackCounterTime(Control *control)
     }
 
     control->second--;
-    if (control->second < 0)
+    if (control->second <= 0)
     {
         if (control->minute == 0)
         {
