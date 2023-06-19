@@ -50,14 +50,26 @@
 #define STOP_PROCESS 0
 #define INIT_PROCESS 1
 
+#define STOP_COUNTER 0
+#define INIT_COUNTER 1
+#define LOAD_CHANGE 2
+#define LOAD_WAIT 3
+#define INJE_CHANGE 4
+#define INJE_WAIT 5
+
 /** ****************************************************************************
  ** ************ STRUCTURES ****************************************************
  ** ****************************************************************************/
 
 typedef struct
 {
+  int timeOver;
   int second;
   int minute;
+  double totalTime;
+  int setTimeMin;
+  int setTimeSec;
+  double setTimeTotal;
   String secondStr;
   String minuteStr;
   String timeToPrint;
@@ -87,6 +99,7 @@ volatile uint8_t flagTimerInterrupt;
 int configState = 0;
 int positionCursor = 0;
 int processState = 0;
+int counterState = 0;
 
 // Definir variables globales
 int tiempo1 = 0;
@@ -115,6 +128,8 @@ void AssignTimeValue(Control *control);
 void nextStateControl(void);
 void IncrementValue(Control *control, int caseLabel);
 void DecrementValue(Control *control, int caseLabel);
+void SetControlTime(Control *control);
+void BackCounterTime(Control *control);
 
 /* ***************************************************************************
  * **** CONFIGURACION ********************************************************
@@ -152,7 +167,8 @@ void setup()
   lcd.setCursor(POS_INJE, 2);
   lcd.print(injeTime.timeToPrint);
 
-  configState = LOAD_MIN;        // pasa al estado de configuracion de minutos para LOAD
+  configState = LOAD_MIN; // pasa al estado de configuracion de minutos para LOAD
+  counterState = STOP_COUNTER;
   positionCursor = POS_LOAD_MIN; // Coloca el cursoe en la posicion de minutos para carga
 
   lcd.setCursor(POS_LOAD_MIN, 2);
@@ -166,20 +182,9 @@ void setup()
 void loop()
 {
 
+  // Modo configuracion
   if (processState == STOP_PROCESS)
   {
-
-    if (flagTimerInterrupt)
-    {
-      flagTimerInterrupt = FALSE;
-
-      contador++;
-      if (contador >= 1000)
-      {
-        contador = 0;
-        Serial.println("interrupcion");
-      }
-    }
 
     // Evaluacion del boton de incremento de valor
     if (buttonIncrement)
@@ -267,6 +272,67 @@ void loop()
 
   else if (processState == INIT_PROCESS)
   {
+
+    // Interrupcion por timer
+    if (flagTimerInterrupt)
+    {
+      flagTimerInterrupt = FALSE;
+
+      // Inicia el conteo
+      if (counterState == INIT_COUNTER)
+      {
+        contador = 0;
+        counterState = LOAD_CHANGE;
+      }
+
+      contador++;
+      if (contador >= 1000)
+      {
+        contador = 0;
+
+        // Maquina de estado para los cambios de estado
+        switch (counterState)
+        {
+        case LOAD_CHANGE:
+          // Prende carga
+          BackCounterTime(&loadTime);
+          if (loadTime.timeOver == TRUE)
+          {
+            loadTime.timeOver = FALSE;
+            counterState = INJE_CHANGE;
+          }
+
+          break;
+
+        case INJE_CHANGE:
+          // Prende injeccion
+          BackCounterTime(&injeTime);
+          if (injeTime.timeOver == TRUE)
+          {
+            injeTime.timeOver = FALSE;
+            counterState = LOAD_CHANGE;
+          }
+
+          break;
+
+        default:
+          break;
+        }
+
+        Serial.print("**Proceso Iniciado** - LOAD: ");
+        Serial.print(loadTime.timeToPrint);
+        Serial.print(" - INJECT: ");
+        Serial.println(injeTime.timeToPrint);
+      }
+    }
+
+    // counterState
+    // #define STOP_COUNTER 0
+    // #define INIT_COUNTER 1
+    // #define LOAD_CHANGE 2
+    // #define LOAD_WAIT 3
+    // #define INJE_CHANGE 4
+    // #define INJE_WAIT 5
   }
 
   // ---------------------------------------------------------
@@ -279,12 +345,20 @@ void loop()
     {
     case STOP_PROCESS:
       processState = INIT_PROCESS;
+      counterState = INIT_COUNTER;
+      // Configura los setpoints de tiempo
+      SetControlTime(&loadTime);
+      SetControlTime(&injeTime);
+      loadTime.timeOver = FALSE;
+      loadTime.timeOver = FALSE;
 
       lcd.noBlink(); // Activar el parpadeo del cursor
       break;
 
     case INIT_PROCESS:
       processState = STOP_PROCESS;
+
+      // Compone los contadores de load e injection
 
       configState = LOAD_MIN;        // pasa al estado de configuracion de minutos para LOAD
       positionCursor = POS_LOAD_MIN; // Coloca el cursoe en la posicion de minutos para carga
@@ -354,6 +428,31 @@ void loop()
 /* ***************************************************************************
  * **** Functions definition *************************************************
  * ***************************************************************************/
+// Funcion para decrementar el tiempo de control
+void BackCounterTime(Control *control)
+{
+  control->totalTime--;
+  if (control->second == 0)
+  {
+    if (control->minute == 0)
+    {
+      control->timeOver = TRUE;
+      control->minute = control->setTimeMin;
+      control->second = control->setTimeSec;
+      control->totalTime = control->setTimeTotal;
+      AssignTimeValue(control);
+      return;
+    }
+    else
+    {
+      control->second = 60;
+      control->minute--;
+    }
+  }
+  control->second--;
+  AssignTimeValue(control);
+}
+
 // Funcion para incrementar valor de las variables
 void IncrementValue(Control *control, int caseLabel)
 {
@@ -429,7 +528,17 @@ void AssignTimeValue(Control *control)
     control->secondStr = String(control->second);
   }
 
+  // Configuracion de tiempo seteado
+  control->totalTime = control->minute * 60 + control->second;
   control->timeToPrint = control->minuteStr + ":" + control->secondStr;
+}
+
+// Funcion para asignar el valor de tiempo a la estructura
+void SetControlTime(Control *control)
+{
+  control->setTimeMin = control->minute;
+  control->setTimeSec = control->second;
+  control->setTimeTotal = control->setTimeMin * 60 + control->setTimeSec;
 }
 
 // Funcion para cambiar el estado en la maquina de estados
