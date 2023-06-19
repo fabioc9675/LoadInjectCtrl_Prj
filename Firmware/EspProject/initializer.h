@@ -46,7 +46,7 @@ extern "C"
 #define POS_LOAD 0
 #define POS_INJE 7
 
-#define TIME_RELAY 2
+#define TIME_RELAY 3
 
 #define POS_LOAD_MIN 1
 #define POS_LOAD_SEC 4
