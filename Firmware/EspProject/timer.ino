@@ -39,7 +39,7 @@ void init_Timer(void)
     // Configuracion del timer a 1 kHz
     timer = timerBegin(0, 80, true);             // Frecuencia de reloj 80 MHz, prescaler de 80, frec 1 MHz
     timerAttachInterrupt(timer, &onTimer, true); // Attach onTimer function to our timer
-    timerAlarmWrite(timer, 1000, true);          // Interrupcion cada 100 conteos del timer, es decir 1 kHz
+    timerAlarmWrite(timer, 10000, true);         // Interrupcion cada 100 conteos del timer, es decir 1 kHz
     timerAlarmEnable(timer);                     // Habilita interrupcion por timer
 }
 

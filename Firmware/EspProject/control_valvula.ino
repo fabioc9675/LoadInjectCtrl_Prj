@@ -285,7 +285,7 @@ void loop()
 
       // Manejo de interrupcion por timer
       contador++;
-      if (contador >= 1000)
+      if (contador >= TIME_COUNTERS)
       {
         contador = 0;
       }
@@ -311,14 +311,6 @@ void loop()
       injeTime.timeOver = FALSE;
       injeTime.relayOver = FALSE;
 
-      loadTime.minute = loadTime.setTimeMin;
-      loadTime.second = loadTime.setTimeSec;
-      injeTime.minute = injeTime.setTimeMin;
-      injeTime.second = injeTime.setTimeSec;
-
-      AssignTimeValue(&loadTime);
-      AssignTimeValue(&injeTime);
-
       // Mostrar el texto "Carga" en la pantalla LCD
       lcd.setCursor(0, 1);
       lcd.print("Load   Inject  Ciclo");
@@ -340,6 +332,13 @@ void loop()
       injeTime.minute = injeTime.setTimeMin;
       injeTime.second = injeTime.setTimeSec;
       injeTime.totalTime = injeTime.setTimeTotal;
+      AssignTimeValue(&loadTime);
+      AssignTimeValue(&injeTime);
+
+      lcd.setCursor(POS_LOAD, 2);
+      lcd.print(loadTime.timeToPrint);
+      lcd.setCursor(POS_INJE, 2);
+      lcd.print(injeTime.timeToPrint);
 
       configState = LOAD_MIN;        // pasa al estado de configuracion de minutos para LOAD
       positionCursor = POS_LOAD_MIN; // Coloca el cursoe en la posicion de minutos para carga
