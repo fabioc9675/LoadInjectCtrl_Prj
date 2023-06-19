@@ -44,6 +44,29 @@ void init_GPIO(void)
     digitalWrite(RELAY_INJE, HIGH);
 }
 
+// Funciones para pender y apagar estado de rele
+void loadTurn_On(void)
+{
+    digitalWrite(RELAY_LOAD, LOW);  // prende carga
+    digitalWrite(RELAY_INJE, HIGH); // apaga injeccion
+    digitalWrite(LED_LOAD, HIGH);   // Prende led indicador
+    digitalWrite(LED_INJE, LOW);    // apaga led indicador
+}
+
+void injeTurn_On(void)
+{
+    digitalWrite(RELAY_LOAD, HIGH); // apaga carga
+    digitalWrite(RELAY_INJE, LOW);  // prende injeccion
+    digitalWrite(LED_LOAD, LOW);    // apaga led indicador
+    digitalWrite(LED_INJE, HIGH);   // Prende led indicador
+}
+
+void relayTurn_Off(void)
+{
+    digitalWrite(RELAY_LOAD, HIGH); // apaga carga
+    digitalWrite(RELAY_INJE, HIGH); // apaga injeccion
+}
+
 /** ****************************************************************************
  ** ************ END OF THE CODE ***********************************************
  ** ****************************************************************************/

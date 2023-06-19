@@ -18,65 +18,11 @@
 #include "initializer.h"
 #include "timer.h"
 #include "interruption.h"
+#include "timefunctions.h"
 
 /** ****************************************************************************
  ** ************ DEFINES *******************************************************
  ** ****************************************************************************/
-
-//********DEFINICIONES CONDICIONES******
-#define TRUE 1
-#define FALSE 0
-
-#define POS_LOAD 0
-#define POS_INJE 7
-
-#define TIME_RELAY 2
-
-#define POS_LOAD_MIN 1
-#define POS_LOAD_SEC 4
-#define POS_INJE_MIN 8
-#define POS_INJE_SEC 11
-
-// Definir la dirección de la pantalla LCD
-#define LCD_ADDR 0x27
-
-// Definicion de casos para la configuracion de los tiempos
-#define LOAD_MIN 1
-#define LOAD_SEC 2
-#define INJE_MIN 3
-#define INJE_SEC 4
-
-#define CASE_MIN 0
-#define CASE_SEC 1
-
-#define STOP_PROCESS 0
-#define INIT_PROCESS 1
-
-#define STOP_COUNTER 0
-#define INIT_COUNTER 1
-#define LOAD_CHANGE 2
-#define LOAD_WAIT 3
-#define INJE_CHANGE 4
-#define INJE_WAIT 5
-
-/** ****************************************************************************
- ** ************ STRUCTURES ****************************************************
- ** ****************************************************************************/
-
-typedef struct
-{
-  int timeOver;
-  int relayOver;
-  int second;
-  int minute;
-  double totalTime;
-  int setTimeMin;
-  int setTimeSec;
-  double setTimeTotal;
-  String secondStr;
-  String minuteStr;
-  String timeToPrint;
-} Control;
 
 /** ****************************************************************************
  ** ************ EXTERN VARIABLES **********************************************
@@ -104,19 +50,11 @@ int positionCursor = 0;
 int processState = 0;
 int counterState = 0;
 
-// Definir variables globales
-int tiempo1 = 0;
-int tiempo2 = 0;
-int tiempo_ciclo = 0;
-unsigned long tiempoActual = 0;
-int cursorPosition = 0;
-
+// boleanos de interrupcion
 volatile boolean buttonIncrement = false;
 volatile boolean buttonDecrement = false;
 volatile boolean buttonSelect = false;
 volatile boolean buttonOk = false;
-
-bool relesEncendidos = true;
 
 int contador = 0;
 
@@ -126,16 +64,7 @@ LiquidCrystal_I2C lcd(LCD_ADDR, 20, 4);
 /** ****************************************************************************
  ** ************ FUNCTIONS *****************************************************
  ** ****************************************************************************/
-
-void AssignTimeValue(Control *control);
 void nextStateControl(void);
-void IncrementValue(Control *control, int caseLabel);
-void DecrementValue(Control *control, int caseLabel);
-void SetControlTime(Control *control);
-void BackCounterTime(Control *control);
-void loadTurn_On(void);
-void injeTurn_On(void);
-void relayTurn_Off(void);
 
 /* ***************************************************************************
  * **** CONFIGURACION ********************************************************
@@ -163,6 +92,9 @@ void setup()
   // Mostrar el texto "Carga" en la pantalla LCD
   lcd.setCursor(0, 1);
   lcd.print("Load   Inject  Ciclo");
+
+  loadTime.minute = 2;
+  injeTime.minute = 2;
 
   AssignTimeValue(&loadTime);
   AssignTimeValue(&injeTime);
@@ -390,6 +322,13 @@ void loop()
       digitalWrite(LED_INJE, LOW);
       digitalWrite(LED_LOAD, LOW);
 
+      loadTime.minute = loadTime.setTimeMin;
+      loadTime.second = loadTime.setTimeSec;
+      loadTime.totalTime = loadTime.setTimeTotal;
+      injeTime.minute = injeTime.setTimeMin;
+      injeTime.second = injeTime.setTimeSec;
+      injeTime.totalTime = injeTime.setTimeTotal;
+
       configState = LOAD_MIN;        // pasa al estado de configuracion de minutos para LOAD
       positionCursor = POS_LOAD_MIN; // Coloca el cursoe en la posicion de minutos para carga
       lcd.setCursor(POS_LOAD_MIN, 2);
@@ -402,204 +341,12 @@ void loop()
 
     delay(300);       // debouncing time
     buttonOk = false; // habilita la bandera para atender una nueva interrupcion
-
-    // unsigned long startTime = millis(); // Tiempo de inicio del ciclo
-    // unsigned long elapsedTime = 0;      // Tiempo transcurrido
-
-    // while (elapsedTime < tiempo_ciclo * 1000 && relesEncendidos)
-    // { // Ejecutar durante tiempo ciclo
-
-    //   digitalWrite(LED_1, HIGH);
-    //   digitalWrite(LED_2, LOW);
-
-    //   // Encender el primer LED y apagar el segundo LED
-    //   digitalWrite(PIN_RELE1, LOW);
-    //   digitalWrite(PIN_RELE2, HIGH);
-    //   Serial.println("led1 on");
-    //   unsigned long tiempo1Start = millis();
-    //   delay(2000);
-    //   digitalWrite(PIN_RELE1, HIGH);
-    //   digitalWrite(PIN_RELE2, HIGH);
-
-    //   while (millis() - tiempo1Start < tiempo1 * 1000)
-    //   {
-    //     // Esperar el tiempo correspondiente
-    //   }
-
-    //   digitalWrite(LED_1, LOW);
-    //   digitalWrite(LED_2, HIGH);
-
-    //   // Encender el segundo LED y apagar el primer LED
-    //   digitalWrite(PIN_RELE1, HIGH);
-    //   digitalWrite(PIN_RELE2, LOW);
-    //   Serial.println("led2 on");
-    //   unsigned long tiempo2Start = millis();
-
-    //   delay(2000);
-    //   digitalWrite(PIN_RELE1, HIGH);
-    //   digitalWrite(PIN_RELE2, HIGH);
-    //   while (millis() - tiempo2Start < tiempo2 * 1000)
-    //   {
-    //     // Esperar el tiempo correspondiente
-    //   }
-
-    //   // Actualizar el tiempo transcurrido
-    //   elapsedTime = millis() - startTime;
-    // }
-
-    // // Apagar ambos LEDs al finalizar el ciclo
-    // digitalWrite(PIN_RELE1, HIGH);
-    // digitalWrite(PIN_RELE2, HIGH);
-
-    // relesEncendidos = false; // Desactivar el bucle para que no se reinicie
   }
 }
 
 /* ***************************************************************************
  * **** Functions definition *************************************************
  * ***************************************************************************/
-// Funciones para pender y apagar estado de rele
-void loadTurn_On(void)
-{
-  digitalWrite(RELAY_LOAD, LOW);  // prende carga
-  digitalWrite(RELAY_INJE, HIGH); // apaga injeccion
-  digitalWrite(LED_LOAD, HIGH);   // Prende led indicador
-  digitalWrite(LED_INJE, LOW);    // apaga led indicador
-}
-
-void injeTurn_On(void)
-{
-  digitalWrite(RELAY_LOAD, HIGH); // apaga carga
-  digitalWrite(RELAY_INJE, LOW);  // prende injeccion
-  digitalWrite(LED_LOAD, LOW);    // apaga led indicador
-  digitalWrite(LED_INJE, HIGH);   // Prende led indicador
-}
-
-void relayTurn_Off(void)
-{
-  digitalWrite(RELAY_LOAD, HIGH); // apaga carga
-  digitalWrite(RELAY_INJE, HIGH); // apaga injeccion
-}
-
-// Funcion para decrementar el tiempo de control
-void BackCounterTime(Control *control)
-{
-  control->totalTime--;
-  // verifica si debe apagar el rele
-  if ((control->setTimeTotal - control->totalTime) == TIME_RELAY)
-  {
-    control->relayOver = TRUE;
-  }
-
-  control->second--;
-  if (control->second == 0)
-  {
-    if (control->minute == 0)
-    {
-      control->timeOver = TRUE;
-      control->minute = control->setTimeMin;
-      control->second = control->setTimeSec;
-      control->totalTime = control->setTimeTotal;
-      AssignTimeValue(control);
-      return;
-    }
-    else
-    {
-      control->second = 59;
-      control->minute--;
-    }
-  }
-  AssignTimeValue(control);
-}
-
-// Funcion para incrementar valor de las variables
-void IncrementValue(Control *control, int caseLabel)
-{
-
-  if (caseLabel == CASE_MIN)
-  {
-    control->minute++;
-    if (control->minute > 59)
-    {
-      control->minute = 0;
-    }
-  }
-
-  if (caseLabel == CASE_SEC)
-  {
-    control->second++;
-    if (control->second > 59)
-    {
-      control->second = 0;
-    }
-  }
-
-  // Asigna el valor a imprimir
-  AssignTimeValue(control);
-}
-
-// Funcion para decrementar valor de las variables
-void DecrementValue(Control *control, int caseLabel)
-{
-
-  if (caseLabel == CASE_MIN)
-  {
-    if (control->minute == 0)
-    {
-      control->minute = 60;
-    }
-    control->minute--;
-  }
-
-  if (caseLabel == CASE_SEC)
-  {
-    if (control->second == 0)
-    {
-      control->second = 60;
-    }
-    control->second--;
-  }
-
-  // Asigna el valor a imprimir
-  AssignTimeValue(control);
-}
-
-// Funcion para asignar el valor de tiempo a la estructura
-void AssignTimeValue(Control *control)
-{
-
-  // Evalua si el valor de minuto es menor que 10
-  if (control->minute < 10)
-  {
-    control->minuteStr = "0" + String(control->minute);
-  }
-  else
-  {
-    control->minuteStr = String(control->minute);
-  }
-  // Evalua si el valor de segundo es menor que 10
-  if (control->second < 10)
-  {
-    control->secondStr = "0" + String(control->second);
-  }
-  else
-  {
-    control->secondStr = String(control->second);
-  }
-
-  // Configuracion de tiempo seteado
-  control->totalTime = control->minute * 60 + control->second;
-  control->timeToPrint = control->minuteStr + ":" + control->secondStr;
-}
-
-// Funcion para asignar el valor de tiempo a la estructura
-void SetControlTime(Control *control)
-{
-  control->setTimeMin = control->minute;
-  control->setTimeSec = control->second;
-  control->setTimeTotal = control->setTimeMin * 60 + control->setTimeSec;
-}
-
 // Funcion para cambiar el estado en la maquina de estados
 void nextStateControl(void)
 {
