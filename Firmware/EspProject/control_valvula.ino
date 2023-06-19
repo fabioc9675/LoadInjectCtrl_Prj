@@ -30,6 +30,8 @@
 #define POS_LOAD 0
 #define POS_INJE 7
 
+#define TIME_RELAY 2
+
 #define POS_LOAD_MIN 1
 #define POS_LOAD_SEC 4
 #define POS_INJE_MIN 8
@@ -64,6 +66,7 @@
 typedef struct
 {
   int timeOver;
+  int relayOver;
   int second;
   int minute;
   double totalTime;
@@ -130,6 +133,9 @@ void IncrementValue(Control *control, int caseLabel);
 void DecrementValue(Control *control, int caseLabel);
 void SetControlTime(Control *control);
 void BackCounterTime(Control *control);
+void loadTurn_On(void);
+void injeTurn_On(void);
+void relayTurn_Off(void);
 
 /* ***************************************************************************
  * **** CONFIGURACION ********************************************************
@@ -281,25 +287,34 @@ void loop()
       // Inicia el conteo
       if (counterState == INIT_COUNTER)
       {
-        contador = 0;
+        contador = 1;
         counterState = LOAD_CHANGE;
+        loadTurn_On();
       }
 
-      contador++;
-      if (contador >= 1000)
+      if (contador == 0)
       {
-        contador = 0;
-
         // Maquina de estado para los cambios de estado
         switch (counterState)
         {
         case LOAD_CHANGE:
           // Prende carga
           BackCounterTime(&loadTime);
+
+          lcd.setCursor(POS_LOAD, 2);
+          lcd.print(loadTime.timeToPrint);
+
+          if (loadTime.relayOver == TRUE)
+          {
+            loadTime.relayOver = FALSE;
+            relayTurn_Off();
+          }
+
           if (loadTime.timeOver == TRUE)
           {
             loadTime.timeOver = FALSE;
             counterState = INJE_CHANGE;
+            injeTurn_On();
           }
 
           break;
@@ -307,10 +322,21 @@ void loop()
         case INJE_CHANGE:
           // Prende injeccion
           BackCounterTime(&injeTime);
+
+          lcd.setCursor(POS_INJE, 2);
+          lcd.print(injeTime.timeToPrint);
+
+          if (injeTime.relayOver == TRUE)
+          {
+            injeTime.relayOver = FALSE;
+            relayTurn_Off();
+          }
+
           if (injeTime.timeOver == TRUE)
           {
             injeTime.timeOver = FALSE;
             counterState = LOAD_CHANGE;
+            loadTurn_On();
           }
 
           break;
@@ -324,15 +350,14 @@ void loop()
         Serial.print(" - INJECT: ");
         Serial.println(injeTime.timeToPrint);
       }
-    }
 
-    // counterState
-    // #define STOP_COUNTER 0
-    // #define INIT_COUNTER 1
-    // #define LOAD_CHANGE 2
-    // #define LOAD_WAIT 3
-    // #define INJE_CHANGE 4
-    // #define INJE_WAIT 5
+      // Manejo de interrupcion por timer
+      contador++;
+      if (contador >= 1000)
+      {
+        contador = 0;
+      }
+    }
   }
 
   // ---------------------------------------------------------
@@ -350,7 +375,9 @@ void loop()
       SetControlTime(&loadTime);
       SetControlTime(&injeTime);
       loadTime.timeOver = FALSE;
-      loadTime.timeOver = FALSE;
+      loadTime.relayOver = FALSE;
+      injeTime.timeOver = FALSE;
+      injeTime.relayOver = FALSE;
 
       lcd.noBlink(); // Activar el parpadeo del cursor
       break;
@@ -359,6 +386,9 @@ void loop()
       processState = STOP_PROCESS;
 
       // Compone los contadores de load e injection
+      relayTurn_Off(); // apaga ambos relays
+      digitalWrite(LED_INJE, LOW);
+      digitalWrite(LED_LOAD, LOW);
 
       configState = LOAD_MIN;        // pasa al estado de configuracion de minutos para LOAD
       positionCursor = POS_LOAD_MIN; // Coloca el cursoe en la posicion de minutos para carga
@@ -428,10 +458,40 @@ void loop()
 /* ***************************************************************************
  * **** Functions definition *************************************************
  * ***************************************************************************/
+// Funciones para pender y apagar estado de rele
+void loadTurn_On(void)
+{
+  digitalWrite(RELAY_LOAD, LOW);  // prende carga
+  digitalWrite(RELAY_INJE, HIGH); // apaga injeccion
+  digitalWrite(LED_LOAD, HIGH);   // Prende led indicador
+  digitalWrite(LED_INJE, LOW);    // apaga led indicador
+}
+
+void injeTurn_On(void)
+{
+  digitalWrite(RELAY_LOAD, HIGH); // apaga carga
+  digitalWrite(RELAY_INJE, LOW);  // prende injeccion
+  digitalWrite(LED_LOAD, LOW);    // apaga led indicador
+  digitalWrite(LED_INJE, HIGH);   // Prende led indicador
+}
+
+void relayTurn_Off(void)
+{
+  digitalWrite(RELAY_LOAD, HIGH); // apaga carga
+  digitalWrite(RELAY_INJE, HIGH); // apaga injeccion
+}
+
 // Funcion para decrementar el tiempo de control
 void BackCounterTime(Control *control)
 {
   control->totalTime--;
+  // verifica si debe apagar el rele
+  if ((control->setTimeTotal - control->totalTime) == TIME_RELAY)
+  {
+    control->relayOver = TRUE;
+  }
+
+  control->second--;
   if (control->second == 0)
   {
     if (control->minute == 0)
@@ -445,11 +505,10 @@ void BackCounterTime(Control *control)
     }
     else
     {
-      control->second = 60;
+      control->second = 59;
       control->minute--;
     }
   }
-  control->second--;
   AssignTimeValue(control);
 }
 

@@ -33,11 +33,11 @@ extern "C"
 #define BUTTON_SELECT 17
 #define BUTTON_OK 5
 
-#define PIN_RELE1 18
-#define PIN_RELE2 19
+#define RELAY_LOAD 18
+#define RELAY_INJE 19
 
-#define LED_1 12
-#define LED_2 13
+#define LED_LOAD 12
+#define LED_INJE 13
 
   /** ****************************************************************************
    ** ************ VARIABLES *****************************************************

@@ -29,20 +29,19 @@
 // inicializacion de los pines del microcontrolador
 void init_GPIO(void)
 {
-
     // Configurar los pines de los pulsadores y el relé
     pinMode(BUTTON_INCREMENT, INPUT_PULLUP);
     pinMode(BUTTON_DECREMENT, INPUT_PULLUP);
     pinMode(BUTTON_SELECT, INPUT_PULLUP);
     pinMode(BUTTON_OK, INPUT_PULLUP);
 
-    pinMode(PIN_RELE1, OUTPUT);
-    pinMode(PIN_RELE2, OUTPUT);
-    pinMode(LED_1, OUTPUT);
-    pinMode(LED_2, OUTPUT);
+    pinMode(RELAY_LOAD, OUTPUT);
+    pinMode(RELAY_INJE, OUTPUT);
+    pinMode(LED_LOAD, OUTPUT);
+    pinMode(LED_INJE, OUTPUT);
 
-    digitalWrite(PIN_RELE1, HIGH);
-    digitalWrite(PIN_RELE2, HIGH);
+    digitalWrite(RELAY_LOAD, HIGH);
+    digitalWrite(RELAY_INJE, HIGH);
 }
 
 /** ****************************************************************************
